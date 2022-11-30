@@ -1,0 +1,358 @@
+# @@ Cell 1 (241)
+import random
+import numpy as np
+import matplotlib.pyplot as plt
+np.random.seed(74)
+
+
+"""
+source: https://medium.com/@ruthpolleitriechert/what-does-genre-in-art-mean-things-you-never-dared-to-ask-a-gallerist-d29b5f3e9dba
+History Painting
+Portraits
+Genre Painting
+Landscapes
+Animal Painting
+Still Life
+
+vs. 
+
+source: [https://www.lumas.com/art-genres/]
+Renaissance
+Rococo
+Romanticism 
+Expressionism
+Impressionism
+Surrealism
+Abstract art
+Bauhaus Art
+Pop art
+Realist Art
+"""
+# class Interests:
+#     def __init__(self):
+#         self.abstract = random.random()
+#         self.realist = random.random()
+#         self.romanticism = random.random()
+#         self.surrealism = random.random()
+  
+def interestsGenerator():
+        interestsVector = np.random.rand(4)
+        # interestsVector[0]  #abstract
+        # interestsVector[1]  #realist
+        # interestsVector[2]  #romanticism
+        # interestsVector[3]  #surrealism
+        #normalize:
+        interestsVector = interestsVector/np.linalg.norm(interestsVector)
+        # print("norm is:", np.linalg.norm(interestsVector))
+        return interestsVector
+
+def printInfo(p):
+        string = f"*****\nPersonInfo: \nID: {p.id}\nInterests: {p.interests}\nTimeSpent: {p.timeSpent}\n*****\n"
+        print(string)
+
+class Person:
+    def get_interests(self):
+        return self.interests
+    
+    def get_x(self):
+        return self.posX
+    def get_y(self):
+        return self.posY
+    def get_loc(self):
+        return (self.posX, self.posY)
+    def set_loc(self, newX, newY):
+        self.posX = newX
+        self.posY = newY
+        
+        
+    def __init__(self):
+        self.id = id(self)
+        self.timeSpent = 0
+        self.interests = interestsGenerator() #Interests()
+        self.posX = -1 #-1 is outside the sim
+        self.posY = -1 #-1 is outside the sim
+        self.visited = [] #list of visited exhibits
+        print(f"Person with ID {self.id} generated! Interests: {self.interests}")
+        # printInfo(self)
+    
+p = Person()
+p2 = Person()
+p3 = Person()
+
+class Exhibit:
+    def __init__(self, loc, num):
+        self.genres = interestsGenerator()
+        (self.posX, self.posY) = loc
+        self.num = num
+    def get_genres(self):
+        return self.genres
+    
+    def get_x(self):
+        return self.posX
+    def get_y(self):
+        return self.posY
+    def get_loc(self):
+        return (self.posX, self.posY)
+    def set_loc(self, newX, newY):
+        self.posX = newX
+        self.posY = newY
+
+def dist(loc1, loc2): #loc1: (x, y) --> calcualtes the Euclidian distance btw 2 points
+    return np.sqrt((loc1[0]-loc2[0])**2 + (loc1[1]-loc2[1])**2)
+## Testing
+# e1 = Exhibit()
+# print(p.get_interests() @ e1.get_genres())
+# print(p2.get_interests() @ e1.get_genres())
+# p3.get_interests() @ e1.get_genres()
+
+# @@ Cell 2
+## Creating the board
+board_dim = (7, 10)
+board = np.zeros(board_dim)
+board[:, -1] = -1
+board[:, 0] = -2
+## Exhibit 1:
+board[0,1:4] = -3
+board[1,2] = -3
+## Exhibit 2:
+board[0,5:8] = -3
+board[1,6] = -3
+## Exhibit 3:
+board[-1,1:4] = -3
+board[-2,2] = -3
+## Exhibit 4:
+board[-1,5:8] = -3
+board[-2,6] = -3
+
+
+ex0c = (0,2)
+ex1c = (0,6)
+ex2c = (6, 2)
+ex3c = (6, 6)
+## Making the exhibits ex0 to ex3:
+ex0 = Exhibit(ex0c, 0)
+ex1 = Exhibit(ex1c, 1)
+ex2 = Exhibit(ex2c, 2)
+ex3 = Exhibit(ex3c, 3)
+exhibits_lst = [ex0,ex1,ex2,ex3]
+
+plt.imshow(board)
+title_text = "Round (TODO)" + \
+"\nFrequency of people being sent at every iteration In this round: (TODO) People per time step" + \
+"\n" + \
+"\nTimestep in this round: (TODO)" + \
+"\nNumber of People present in the the hallway: (TODO)" + \
+"\nNumber of people who've finished visiting the musuem hallway simulation (TODO)" + \
+"\nFraction of space occupied: (TODO)" 
+plt.title(title_text,fontsize='large',
+    loc='left',
+    fontweight='bold',
+    style='italic',
+    family='monospace')
+plt.show()
+# plt.subtitle("Frequency of sending people []. \n hi")
+board_org = board.copy()
+
+# @@ Cell 3
+L = 4
+b = 40
+k = 0.09 
+t = np.arange(0,30)
+y = L/(1+b*np.exp(-k*t)) - L/(1+b)
+plt.clf()
+plt.plot(t, y)
+plt.xlabel("timestep")
+plt.ylabel("weight of the probablistic movement \ntowards the exit door of the halway")
+plt.title("The curve representing the weight towards\n wanting to move towards the exit of the museum after\n a person has spent t time in the hallway")
+plt.show()
+plt.savefig("Exiting weight progression.jpeg")
+
+def calc_exit_pref(t): #t is time spent in the hallway
+    return L/(1+b*np.exp(-k*t)) - L/(1+b)
+    
+
+# @@ Cell 4
+#testing
+board2 = np.zeros(board_org.shape)
+board2[5,5] = 10
+plt.clf()
+plt.imshow(board_org)
+plt.imshow(board2, alpha=0.5, cmap="Greys")
+plt.show()
+
+# @@ Cell 5
+people_placements = np.zeros(board_dim) # 1 or 0 based on whether occupied or not --> #sunsetting this
+people_present_lst = []
+people_done_lst = [] #list of people who've successfully finished the simulation
+freq = 2 #frequency of sending f people per iteration
+timesteps = 20
+round_num = 0
+occupied_value = 10
+
+# @@ Cell 6
+board = np.zeros(board_org.shape) #reset the board
+## %matplotlib inline
+get_ipython().run_line_magic('matplotlib', 'osx')
+from matplotlib.animation import FFMpegWriter
+metadata = dict(title='CrowdSim', artist='Matplotlib',comment='Maryam Azmandian 2022')
+writer = FFMpegWriter(fps=15, metadata=metadata)
+fig = plt.figure()
+with writer.saving(fig, "crowdsim0.mp4", dpi=200):
+    
+    ## grab the first frame
+    plt.clf()
+    plt.imshow(board_org)
+#     plt.imshow(board, alpha=0.5)#, cmap="Greys")
+    plt.show()
+    plt.draw()
+    plt.pause(0.05)
+    writer.grab_frame()
+    ## grab the first frame
+    for t in range(timesteps):
+        if (t%10==0): print(t,end='')
+        print('.',end='')
+        
+        
+        #logic here
+        
+        # step 1: create people to be entering
+        people_created = []
+        for i in range(freq):
+            p = Person()
+            p.set_loc(i,9)
+            #people_placements[i,9] = 1 #sunsetting this line
+            board[i, 9] = occupied_value
+            people_created.append(p)
+            people_present_lst.append(p)
+            
+            
+        # step 2: have them decide to move, handle exit logic
+        for p in people_present_lst:
+            pref_weights = []
+            for exh in exhibits_lst:
+                distance = dist(p.get_loc(), exh.get_loc())
+                if distance <=1: # check if being visited
+                    p.visited.append(exh)
+                if exh not in p.visited:
+                    pref = np.dot(p.get_interests(), ex0.get_genres())
+                    pref += 1/distance # no danger of div by zero error here
+                else:
+                    pref = 0
+                pref_weights.append(pref)
+            exit_pref = calc_exit_pref(p.timeSpent)
+            pref_weights.append(exit_pref)
+            choice = random.choices(exhibits_lst + [0], weights=pref_weights, k=1)[0] #0 denotes choice of exit path
+            (curX, curY) = p.get_loc()
+            if choice == 0: #decide to move towards the exit
+                (toX, toY) = (curX, curY-1) # then want to move to the left after checking occupancy
+                
+                if board[toX, toY] != occupied_value:
+                    board[curX, curY] = 0
+                    board[toX, toY] = occupied_value
+                    p.set_loc(toX,toY)
+            else: #choice is an exhibit obj, we need to move towards a loc
+                (exhX, exhY) = choice.get_loc()
+                x_adder = ((exhX < curX) * -1) + ((exhX > curX) * 1 )
+                y_adder = ((exhY < curY) * -1) + ((exhY > curY) * 1 )
+                (toX, toY) = (curX, curY)
+                if board[x_adder+curX,curY] != occupied_value:
+                    (toX, toY) = (x_adder+curX,curY)
+                elif board[curX, y_adder + curY] != occupied_value:
+                    (toX, toY) = (curX, y_adder + curY)
+                #otherwise stay in place.
+                if (toX, toY) != (curX, curY):
+                    board[curX, curY] = 0
+                    board[toX, toY] = occupied_value
+                    p.set_loc(toX,toY)
+                    
+            
+            
+            if p.get_y == 0: #if we're at the exit
+                (curX, curY) = p.get_loc()
+                board[curX, curY] = 0
+                people_done_lst.append(p)
+                p.set_loc((-1,-1)) #update p's loc to being outside the hallway
+
+                #can add working towards the exit as a preference too!!!
+                #logistics growth for time: y = L/(1+b*exp(-kt))
+            
+        
+        #remove people who've exited from the people present in the hallway
+        set1 = set(people_present_lst)
+        set2 = set(people_done_lst)
+        people_present_lst = list(set1 - set2)
+
+        
+        
+#         plt.figure(figsize = (10,10))
+#         plt.imshow(img_1)
+#         plt.imshow(img_2, alpha=0.5)
+        
+        plt.clf()
+#         plt.imshow(board_org)
+        plt.imshow(board, alpha=0.5, cmap="Greys")
+        plt.show()
+        plt.draw()
+        plt.pause(0.05)
+        writer.grab_frame()
+    
+p1 = Person()
+cur_loc = p1.get_loc()
+# p1.set_loc()
+
+# @@ Cell 7
+# plt.scatter([(1,2), (3,4)], alpha=0.5)
+# plt.show()
+((2 < 2) * -1) + ((2 > 2) * 1 )
+
+# @@ Cell 8
+# ?random.randint
+# ?np.linalg.norm
+
+# np.random.rand(4)
+
+# @@ Cell 9
+# import numpy as np
+#?np.linalg.norm
+#https://www.geeksforgeeks.org/how-to-get-weighted-random-choice-in-python/
+import random
+  
+
+sampleList = [100, 200, 300, 400, 500]
+
+randomList = random.choices(sampleList, weights=(10, 20, 30, 40, 50), k=1)[0]
+
+print(randomList)
+
+# @@ Cell 10
+# from matplotlib.animation import FFMpegWriter
+# metadata = dict(title='My first animation in 2D', artist='Matplotlib',comment='Wakanda is coming.')
+# writer = FFMpegWriter(fps=15, metadata=metadata)
+# fig = plt.figure()
+
+# with writer.saving(fig, "wave1d.mp4", dpi=200):
+#     nf = 100
+#     for it in range(nf):
+#         if (it%10==0): print(it,end='')
+#         print('.',end='')
+
+#         n = 50
+#         y = np.zeros(n)
+#         f = 2.0*np.pi/n
+#         for i in range(n):
+#             y[i] = np.cos(f*(i+it)) + np.sin(f*it)*np.cos(3*f*(i+it))
+#         plt.clf()
+#         plt.plot(y, 'ro-',mfc='w')
+#         plt.show()
+#         plt.draw()
+#         plt.pause(0.05)
+#         writer.grab_frame()
+
+# @@ Cell 11
+#testing
+board2 = np.zeros(board_org.shape)
+board2[5,5] = 10
+plt.clf()
+plt.imshow(board_org)
+plt.imshow(board2, alpha=0.5, cmap="binary")
+plt.show()
